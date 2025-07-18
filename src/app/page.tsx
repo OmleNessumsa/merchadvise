@@ -37,7 +37,7 @@ export default function Home() {
     <main className="min-h-screen p-10" style={{ backgroundColor: "#E5F6FF" }}>
       <div className="max-w-4xl mx-auto shadow-xl rounded-xl p-6 bg-white">
         <h1 className="text-3xl font-bold mb-4" style={{ color: "#FC5628" }}>
-          Productvoorstel
+          iBOOD Campagne Voorstellen
         </h1>
         <p className="mb-4" style={{ color: "#1E0033" }}>
           Dit voorstel is gebaseerd op de huidige weersomstandigheden, de weersverwachting voor
@@ -53,7 +53,7 @@ export default function Home() {
           {loading ? (
             <span className="flex items-center justify-center gap-2">
               <span className="animate-spin inline-block w-4 h-4 border-[2px] border-current border-t-transparent rounded-full"></span>
-              Laden...
+              Aan 't werk...
             </span>
           ) : (
             "Doe voorstel"
