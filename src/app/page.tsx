@@ -12,13 +12,28 @@ export default function Home() {
   const [voorstellen, setVoorstellen] = useState<Voorstel[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchVoorstel = async () => {
-    setLoading(true);
+const fetchVoorstel = async () => {
+  setLoading(true);
+  try {
     const res = await fetch("https://asmussen.app.n8n.cloud/webhook/merchadvise");
     const json = await res.json();
-    setVoorstellen(json.data);
-    setLoading(false);
-  };
+
+    // JSON-string binnen het veld 'output' parsen:
+    const parsed = JSON.parse(json.output);
+
+    if (parsed && Array.isArray(parsed.data)) {
+      setVoorstellen(parsed.data);
+    } else {
+      console.error("Ongeldige data ontvangen:", parsed);
+      setVoorstellen([]);
+    }
+  } catch (error) {
+    console.error("Fetch-fout:", error);
+    setVoorstellen([]);
+  }
+  setLoading(false);
+};
+
 
   return (
     <main className="min-h-screen bg-gray-100 p-10">
