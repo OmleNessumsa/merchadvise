@@ -67,7 +67,7 @@ export default function Home() {
               className="border rounded-lg p-4 shadow-sm"
               style={{ backgroundColor: "#F1E5FE", borderColor: "#C896FA" }}
             >
-              <h2 className="text-xl font-semibold" style={{ color: "#FC5628" }}>
+              <h2 className="text-xl font-semibold" style={{ color: "#C896FA" }}>
                 {v.category} <span className="text-sm" style={{ color: "#1E0033" }}>(score: {v.score})</span>
               </h2>
               <p className="italic mt-2" style={{ color: "#1E0033" }}>
