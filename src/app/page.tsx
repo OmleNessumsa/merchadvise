@@ -1,125 +1,169 @@
 "use client";
 import { useState } from "react";
 
-type Voorstel = {
+// Types
+interface Deal {
+  image_url: string;
+  text: string;
+  link: string;
+}
+
+interface Campaign {
+  title: string;
+  promotekst: string;
+  deals: Deal[];
+}
+
+interface SmartCard {
   category: string;
   score: number;
   onderbouwing: string;
   voorbeeldproducten: string[];
-};
-
-const webhooks = {
-  voorstel: {
-    url: "https://asmussen.app.n8n.cloud/webhook/merchadvise",
-    colors: { bg: "#F1E5FE", border: "#C896FA" },
-  },
-  weer: {
-    url: "https://asmussen.app.n8n.cloud/webhook/merch_weer",
-    colors: { bg: "#EFFAE0", border: "#DFF6C0" },
-  },
-  social: {
-    url: "https://asmussen.app.n8n.cloud/webhook/merch-social",
-    colors: { bg: "#E4F3F3", border: "#B6E0E0" },
-  },
-  products: {
-    url: "https://asmussen.app.n8n.cloud/webhook/products",
-    colors: { bg: "#E2F3FF", border: "#6EA9E5" },
-  },
-};
+}
 
 export default function Home() {
-  const [voorstellen, setVoorstellen] = useState<Voorstel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [currentColors, setCurrentColors] = useState(webhooks.voorstel.colors);
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState<string | null>(null);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [smartcards, setSmartcards] = useState<SmartCard[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchVoorstel = async (type: keyof typeof webhooks) => {
-    setLoading(true);
-    setCurrentColors(webhooks[type].colors);
+  const submitPrompt = async (query: string) => {
+    setLoading("prompt");
+    setError(null);
+    setCampaign(null);
+    setSmartcards(null);
     try {
-      const res = await fetch(webhooks[type].url);
+      const res = await fetch(
+        `https://asmussen.app.n8n.cloud/webhook/merch_prompt?prompt=${encodeURIComponent(query)}`
+      );
       const json = await res.json();
       const parsed = JSON.parse(json.output);
-
-      if (parsed && Array.isArray(parsed.data)) {
-        setVoorstellen(parsed.data);
+      if (parsed.campaigns?.[0]) {
+        setCampaign(parsed.campaigns[0]);
       } else {
-        console.error("Ongeldige data ontvangen:", parsed);
-        setVoorstellen([]);
+        setError("Geen campagnes gevonden.");
       }
-    } catch (error) {
-      console.error("Fetch-fout:", error);
-      setVoorstellen([]);
+    } catch (e) {
+      setError("Fout bij ophalen prompt-campagne.");
     }
-    setLoading(false);
+    setLoading(null);
+  };
+
+  const fetchSmart = async (type: "smart" | "weer") => {
+    setLoading(type);
+    setError(null);
+    setCampaign(null);
+    setSmartcards(null);
+    const url =
+      type === "smart"
+        ? "https://asmussen.app.n8n.cloud/webhook/merchadvise"
+        : "https://asmussen.app.n8n.cloud/webhook/merch_weer";
+    try {
+      const res = await fetch(url);
+      const json = await res.json();
+      const parsed = JSON.parse(json.output);
+      setSmartcards(parsed.data);
+    } catch (e) {
+      setError("Fout bij ophalen suggesties.");
+    }
+    setLoading(null);
+  };
+
+  const handleCardClick = (card: SmartCard) => {
+    const content = `${card.category}: ${card.onderbouwing} Suggesties: ${card.voorbeeldproducten.join(", ")}`;
+    submitPrompt(content);
   };
 
   return (
-    <main className="min-h-screen p-10" style={{ backgroundColor: "#E5F6FF" }}>
-      <div className="max-w-4xl mx-auto shadow-xl rounded-xl p-6 bg-white">
-        <h1 className="text-3xl font-bold mb-4" style={{ color: "#FC5628" }}>
-          Productvoorstel
-        </h1>
-        <p className="mb-4" style={{ color: "#1E0033" }}>
-          Dit voorstel is gebaseerd op de huidige weersomstandigheden, de weersverwachting voor
-          de komende drie dagen, besproken producten op social media, trends op social media en
-          nieuwsactualiteiten.
-        </p>
-        <div className="flex gap-2 mb-4">
+    <main className="min-h-screen bg-[#edf4fb] p-10">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold mb-6">Merchy</h1>
+
+        <div className="flex gap-2 items-center mb-4">
+          <input
+            type="text"
+            placeholder="Ik wil graag een campagne met beauty producten"
+            className="flex-1 p-3 rounded border border-gray-300 shadow"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitPrompt(prompt)}
+          />
           <button
-            onClick={() => fetchVoorstel("voorstel")}
-            disabled={loading}
-            className="px-4 py-2 rounded text-white transition"
-            style={{ backgroundColor: "#FC5628" }}
+            onClick={() => submitPrompt(prompt)}
+            className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded"
           >
-            Voorstel
-          </button>
-          <button
-            onClick={() => fetchVoorstel("weer")}
-            disabled={loading}
-            className="px-4 py-2 rounded text-white transition"
-            style={{ backgroundColor: "#1E0033" }}
-          >
-            Weer
-          </button>
-          <button
-            onClick={() => fetchVoorstel("social")}
-            disabled={loading}
-            className="px-4 py-2 rounded text-white transition"
-            style={{ backgroundColor: "#1E0033" }}
-          >
-            Social
-          </button>
-          <button
-            onClick={() => fetchVoorstel("products")}
-            disabled={loading}
-            className="px-4 py-2 rounded text-white transition"
-            style={{ backgroundColor: "#1E0033" }}
-          >
-            Products
+            ✈️
           </button>
         </div>
 
-        <div className="mt-6 grid gap-4">
-          {voorstellen.map((v) => (
-            <div
-              key={v.category}
-              className="border rounded-lg p-4 shadow-sm"
-              style={{ backgroundColor: currentColors.bg, borderColor: currentColors.border }}
-            >
-              <h2 className="text-xl font-semibold" style={{ color: "#FC5628" }}>
-                {v.category} <span className="text-sm" style={{ color: "#1E0033" }}>(score: {v.score})</span>
-              </h2>
-              <p className="italic mt-2" style={{ color: "#1E0033" }}>
-                {v.onderbouwing}
-              </p>
-              <ul className="mt-2 list-disc list-inside" style={{ color: "#1E0033" }}>
-                {v.voorbeeldproducten.map((prod) => (
-                  <li key={prod}>{prod}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        <div className="flex gap-4 mb-6">
+          <button
+            onClick={() => fetchSmart("smart")}
+            disabled={loading !== null}
+            className="bg-[#1E0033] text-white px-4 py-2 rounded"
+          >
+            {loading === "smart" ? "Laden..." : "Smart Suggest"}
+          </button>
+          <button
+            onClick={() => fetchSmart("weer")}
+            disabled={loading !== null}
+            className="bg-[#1E0033] text-white px-4 py-2 rounded"
+          >
+            {loading === "weer" ? "Laden..." : "Weer"}
+          </button>
         </div>
+
+        {loading === "prompt" && (
+          <p className="text-blue-600 mb-4 animate-pulse">
+            Dit kan 5 tot 10 minuten duren afhankelijk van de hoeveelheid deals...
+          </p>
+        )}
+
+        {error && <p className="text-red-600 mb-4">{error}</p>}
+
+        {campaign && (
+          <div className="mt-6">
+            <h2 className="text-3xl font-bold mb-2">{campaign.title}</h2>
+            <p className="mb-6 text-lg">{campaign.promotekst}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {campaign.deals.map((deal, index) => (
+                <a
+                  key={index}
+                  href={deal.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white rounded-lg shadow p-4 flex gap-4 items-center hover:bg-gray-50 transition"
+                >
+                  <img src={deal.image_url} alt="" className="w-20 h-20 object-contain" />
+                  <p className="text-sm font-medium">{deal.text}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {smartcards && (
+          <div className="grid md:grid-cols-2 gap-6 mt-8">
+            {smartcards.map((card) => (
+              <div
+                key={card.category}
+                className="bg-white rounded-xl border border-gray-200 shadow p-6 cursor-pointer hover:shadow-md transition"
+                onClick={() => handleCardClick(card)}
+              >
+                <h3 className="text-xl font-semibold mb-2 text-[#FC5628]">
+                  {card.category} <span className="text-sm text-[#1E0033]">({card.score})</span>
+                </h3>
+                <p className="italic text-[#1E0033] mb-2">{card.onderbouwing}</p>
+                <ul className="list-disc list-inside text-[#1E0033]">
+                  {card.voorbeeldproducten.map((prod) => (
+                    <li key={prod}>{prod}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );
